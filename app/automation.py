@@ -1,5 +1,6 @@
 import sqlite3
 from flask import Flask, render_template, request, session, redirect
+from sifre import is_strong_password
 
 
 app = Flask(__name__)
@@ -55,6 +56,7 @@ def submit():
     else:
         return redirect('/login')
 
+
 @app.route('/register', methods=['POST', 'GET'])
 def register():
     if request.method == 'POST':
@@ -67,6 +69,17 @@ def register():
             # Check if the username already exists
             cursor.execute('SELECT * FROM users WHERE username=?', (username,))
             existing_user = cursor.fetchone()
+
+            if not username or not password:
+                error = 'Username and password are required'
+                return render_template('register.html', error=error)
+            
+            # Check if the password is not strong
+            try:
+                is_strong_password(password)
+            except ValueError as e:
+                error = str(e)
+                return render_template('register.html', error=error)
             
             if existing_user:
                 error = 'Username already exists'
@@ -77,7 +90,7 @@ def register():
             conn.commit()
             
             session['username'] = username
-            return redirect('/')
+            return redirect('/login')
         
     return render_template('register.html')
 
